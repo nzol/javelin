@@ -178,7 +178,7 @@
 
        // document.getElementById('loadingdiv').style.visibility="visible"
 
-        /*var xmlhttp;
+        var xmlhttp;
         xmlhttp=new XMLHttpRequest();
      
         xmlhttp.open("GET",path,false);
@@ -188,13 +188,14 @@
         return RESPONSE;
         delete window.xmlhttp;
 
-        document.getElementById('loadingdiv').style.visibility="hidden"*/
+        document.getElementById('loadingdiv').style.visibility="hidden"
 
-        return $.ajax({
+       /* return $.ajax({
+
         type: "GET",
         url: path,
         async: false
-    }).responseText;
+    }).responseText;*/
 
     }
 
@@ -239,6 +240,7 @@
             parseLoadScript(data,ScriptAlias,Params)
           },
           error: function(e) {
+            alert("A MALFUNCTION MALFUNCTIONED - " + e.message)
             //called when there is an error
             //console.log(e.message);
           }
