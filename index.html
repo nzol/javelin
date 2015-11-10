@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" manifest="http://localhost/javelin/offlinemanifest.mf">
 
 <head>
 
@@ -42,7 +42,6 @@
         <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
     <![endif]-->
 
-    <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?sensor=false"></script>
     <script src="http://code.jquery.com/jquery-1.11.2.min.js"></script>
 
     <script type="text/javascript">
@@ -65,33 +64,21 @@
     }    
 
 
-    document.addEventListener('touchmove', function(event) {
-       if(event.target.parentNode.className.indexOf('navbar-static-top') != -1 
-    || event.target.className.indexOf('navbar-static-top') != -1 ) {
-        event.preventDefault(); }
-    }, false);
-
+   
     function getCookie(cname) {
-        var name = cname + "=";
-        var ca = document.cookie.split(';');
-        for(var i=0; i<ca.length; i++) {
-            var c = ca[i];
-            while (c.charAt(0)==' ') c = c.substring(1);
-            if (c.indexOf(name) == 0) {
-                return c.substring(name.length,c.length);
-            }
-            else {
-                return "nocookie";
-            }
-        }
+        return localStorage.getItem(cname)
+    }
+    function setCookie(cname,val) {
+        localStorage.setItem(cname,val)
+        return true;
 
     }
 
     function logout() {
 
-        var SessionId = document.getElementById("CLICKA_currentSessionId").innerHTML;
+        var SessionId = getCookie("CLICKA_currentSessionId");
 
-        document.cookie = "CLICKA_currentSessionId=; expires=Thu, 01 Jan 1970 00:00:00 UTC";
+        setCookie("CLICKA_currentSessionId","0");
 
         var logout = ajaxRequest(serverLocation + "system/internaltarget.php?Action=logout&SessionId=" + SessionId);
 
@@ -99,7 +86,7 @@
         document.getElementById("side-menu").style.display="none";
         document.getElementById("topbartext").innerHTML = "Javelin"
 
-        loadScript('publichome')
+        loadOffline('loginscreen')
 
     }
 
@@ -107,17 +94,19 @@
     function getSessionVar(VarName) {
 
         var SessionId = document.getElementById("CLICKA_currentSessionId").innerHTML;
-
+/*
         var VarVal = ajaxRequest(serverLocation + "system/internaltarget.php?Action=getSessionVar&SessionId=" + SessionId + "&VarName=" + VarName);
 
-        return VarVal;
+        return VarVal;*/
+
+        return localStorage.getItem(SessionId + "_" + VarName)
 
     }
 
     function setSessionVar(VarName,VarVal) {
 
         var SessionId = document.getElementById("CLICKA_currentSessionId").innerHTML;
-
+/*
 
         var Resp = ajaxRequest(serverLocation + "system/internaltarget.php?Action=setSessionVar&SessionId=" + SessionId + "&VarName=" + VarName + "&VarVal=" + VarVal);
 
@@ -126,7 +115,9 @@
         }
         else {
             return false;
-        }
+        }*/
+
+        localStorage.setItem(SessionId + "_"+ VarName,VarVal)
 
 
     }
@@ -135,16 +126,18 @@
 
         var ping = ajaxRequest(serverLocation + "system/internaltarget.php?Action=ping");
         if(ping=="pong") {
-            // all is fine with the world.
+            // WORKING ONLINE
+            document.getElementById("CLICKA_currentMode").innerHTML="Online"
         }
         else {
-            $('#notConnectedDisplay').modal('show');
+            document.getElementById("CLICKA_currentMode").innerHTML="Offline"
+            
         }
 
         var SessionIdCookie = getCookie("CLICKA_currentSessionId");
         
 
-        if(SessionIdCookie=="nocookie") {
+        if(SessionIdCookie=="0") {
             document.getElementById("CLICKA_currentSessionId").innerHTML = "0";
             document.getElementById("side-menu").style.display="none";
         }
@@ -168,11 +161,11 @@
 
         } else {
 
-            if(SessionIdCookie=="nocookie") {
-                loadScript('publichome');
+            if(SessionIdCookie=="0") {
+                loadOffline('loginscreen');
             }
             else {
-                loadScript(LastScript,LastScriptParams);
+                loadOffline(LastScript);
             }
 
         }
@@ -203,6 +196,16 @@
         url: path,
         async: false
     }).responseText;
+
+    }
+
+    function loadOffline(ScreenAlias) {
+
+        $(".offlinescreen").hide()
+        $("#"+ScreenAlias).fadeIn(1000)
+       // document.getElementById(ScreenAlias).style.display=""
+
+        setSessionVar("currentScript",ScreenAlias)
 
     }
 
@@ -290,7 +293,7 @@
         }
         else {
             if(document.getElementById('page-wrapper').innerHTML!=scriptoutputdata) {
-            document.getElementById('page-wrapper').innerHTML = scriptoutputdata;
+            //document.getElementById('page-wrapper').innerHTML = scriptoutputdata;
             }
 
              if(CLICKA_SessionId=="0") {
@@ -310,24 +313,12 @@
 
     }
 
-    function reloadCurrentScript() {
-
-        var LastScript = getSessionVar("currentScript");
-        var LastScriptParams = getSessionVar("currentScriptParams");
-        LastScript = typeof LastScript !== 'undefined' ? LastScript : "dashboard";
-        LastScriptParams = typeof LastScriptParams !== 'undefined' ? LastScriptParams : "param2:value2;param3:value3";
-
-
-        loadScript(LastScript,LastScriptParams);
-
-    }
 
     function submitLogin() {
 
         var UsernameEmail = document.getElementById('Username').value;
         var UserPassword = document.getElementById('Password').value;
 
-        var CookiesExpire = ajaxRequest(serverLocation + "system/internaltarget.php?Action=cookieExpiry")
 
         var LoginResponse = ajaxRequest(serverLocation + "system/internaltarget.php?Action=signIn&Username="+UsernameEmail+"&Password="+UserPassword);
 
@@ -346,10 +337,10 @@
             $('#loginToJavelin').modal('hide');
             
             document.getElementById("CLICKA_currentSessionId").innerHTML = LoginResponse;
-            document.cookie="CLICKA_currentSessionId=" + LoginResponse + "; expires="+CookiesExpire;
+            setCookie("CLICKA_currentSessionId",LoginResponse);
             document.getElementById("side-menu").style.display="";
 
-            loadScript('dashboard');
+            loadOffline('screen_dashboard');
         }
 
        
@@ -377,85 +368,7 @@
 
     }
 
-    // LOCATION
-
-    var geocoder = new google.maps.Geocoder();
-
-    function startLocation() {
-
-        document.getElementById('loadingdiv').style.visibility="visible"        
-
-        var x = document.getElementById("page-wrapper");
-
-        
-
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(showPosition);
-        } else {
-            x.innerHTML = "Javelin can not find any coffee, your device does not let Javelin automatically detect your location. Please tell us your location by choosing your location below...";
-        }
-
-    }
-
-    var click_cityname;
-
-    function codeLatLng(lat, lng) {
-
-        var latlng = new google.maps.LatLng(lat, lng);
-        geocoder.geocode({'latLng': latlng}, function(results, status) {
-          if (status == google.maps.GeocoderStatus.OK) {
-          console.log(results)
-            if (results[1]) {
-             //formatted address
-             //alert(results[0].formatted_address)
-            //find country name
-                 for (var i=0; i<results[0].address_components.length; i++) {
-                for (var b=0;b<results[0].address_components[i].types.length;b++) {
-
-                //there are different types that might hold a city admin_area_lvl_1 usually does in come cases looking for sublocality type will be more appropriate
-                    if (results[0].address_components[i].types[b] == "administrative_area_level_1") {
-                        //this is the object you are looking for
-                        city= results[0].address_components[i];
-                        break;
-                    }
-                }
-            }
-            ////city data
-            //alert(city.short_name + " " + city.long_name)
-            click_cityname = city.long_name;
-           //alert(click_cityname);
-
-            //window.location = "index.php?lat=" +  lat + "&long=" + lng + "&locality=" + click_cityname + "&go=findcoffee";
-
-
-            var LocalityId = ajaxRequest(serverLocation + "system/internaltarget.php?Action=getLocalityId&q=" + click_cityname)
-
-            setSessionVar("userLat",lat);
-            setSessionVar("userLong",lng);
-            setSessionVar("userLocality",LocalityId);
-            loadScript('findcoffee'); 
-
-            document.getElementById('loadingdiv').style.visibility="hidden"
-
-
-            } else {
-              alert("ERROR")
-            }
-          } else {
-              alert("ERROR")
-            //return "err";
-          }
-        });
-    }
-
-    function showPosition(position) {
-        codeLatLng(position.coords.latitude,position.coords.longitude);        
-    }
-
-
-   
     
-
     function displayError(scriptoutputdata) {
 
         $('#errorDisplay').modal('show');
@@ -467,8 +380,244 @@
 
     }
 
+    function LoadPrimaryImg(productId) {
+       /* var xmlhttp;
+        if (window.XMLHttpRequest) { // code for IE7+, Firefox, Chrome, Opera, Safari
+            xmlhttp = new XMLHttpRequest();
+        } else { // code for IE6, IE5
+            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+        xmlhttp.onreadystatechange = function() {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {     
+                return "data:image/png;base64," + xmlhttp.responseText;
+                alert(xmlhttp.responseText)
+            }
+        };    
+        xmlhttp.open("GET", serverLocation + "system/internaltarget.php?Action=returnPrimaryImage&ProductId=" + productId);
+        xmlhttp.send(null);*/
+        var data = ajaxRequest(serverLocation + "system/internaltarget.php?Action=returnPrimaryImage&ProductId=" + productId);
+        return data;
 
-   
+    }
+
+    function runSync() {
+
+        alert("STARTING SYNC")
+
+        var productList = ajaxRequest(serverLocation + "system/internaltarget.php?Action=productList");
+        setCookie("productList",productList);
+        
+        var categoryList = ajaxRequest(serverLocation + "system/internaltarget.php?Action=categoryList");
+        setCookie("categoryList",categoryList);
+
+        var productListSplit = productList.split("|");
+        for(i=0;i<productListSplit.length;i++) {
+            var productInfoSplit = productListSplit[i].split(",")
+            var productId = productInfoSplit[0];
+            var ImgBase = LoadPrimaryImg(productId);
+            setCookie("img_primary_"+productId,ImgBase)
+        }
+
+        var SessionId = getCookie("CLICKA_currentSessionId");
+
+        var jobData = ajaxRequest(serverLocation + "system/internaltarget.php?Action=jobData&SessionId=" + SessionId);
+        setCookie("jobData",jobData);
+
+        alert("Sync Complete")
+
+
+    }
+
+    function showOfflineImage(CookieName,ImageId) {
+
+
+        var cookiedata = getCookie(CookieName)
+        document.getElementById(ImageId).src="data:image/png;base64," + cookiedata;
+
+    }
+
+    function showProductCategory(CategoryId) {
+
+       showProductCategory_Screen(CategoryId)
+       showProductCategory_Img(CategoryId)
+
+
+
+    }
+
+    function showProductCategory_Screen(CategoryId) {
+
+        loadOffline("screen_productcategory")
+
+        $("#productcategorylist").hide();
+
+       
+
+        var outputcode = "<div class='table-responsive'> <table class='table table-striped table-bordered table-hover'><tbody>";
+                                        
+                                    
+
+        var productList = getCookie("productList");
+        var productListSplit = productList.split("|");
+
+        var i=0;
+        for(i=0;i<productListSplit.length;i++) {
+            var splitLine = productListSplit[i].split(",")
+            var ProductId = splitLine[0];
+            var Description = splitLine[1];
+            var Short = splitLine[2];
+            var SellPrice = splitLine[3];
+            var CatId = splitLine[4];
+            if(CatId==CategoryId) {
+                var outputcode = outputcode + "<tr onclick='showProduct("+ProductId+")'><td width='10%'><img src='' id='"+ProductId+"_img' width='95%'></td><td style='font-size:24px; vertical-align:middle;' valign='middle'>" + Description + "</td></tr>";
+            }
+
+        }
+      
+        var outputcode = outputcode + "</tbody></table></div>"
+
+        document.getElementById('productcategorylist').innerHTML=outputcode;
+
+        var categoryNameArr = getCookie("categoryList").split(",")
+        var categoryName = categoryNameArr[CategoryId]
+
+        document.getElementById('productcategorytitle').innerHTML=categoryName;
+
+        $("#productcategorylist").slideDown(1000);
+
+
+
+    }
+
+    function showProductCategory_Img(CategoryId) {
+
+
+
+       
+
+                                        
+                                    
+
+        var productList = getCookie("productList");
+        var productListSplit = productList.split("|");
+
+      
+        var i=0;
+        for(i=0;i<productListSplit.length;i++) {
+            var splitLine = productListSplit[i].split(",")
+            var ProductId = splitLine[0];
+            var Description = splitLine[1];
+            var Short = splitLine[2];
+            var SellPrice = splitLine[3];
+            var CatId = splitLine[4];
+            if(CatId==CategoryId) {
+                try{
+                showOfflineImage("img_primary_"+ProductId,ProductId+"_img");
+                    }catch(e){}
+            }
+
+        }
+
+       
+
+
+    }
+
+    function showImageOnProduct(ImageId) {
+        
+        var offlineImage= getCookie(ImageId);
+
+        document.getElementById("imgList").innerHTML = document.getElementById("imgList").innerHTML + "<img src='data:image/png;base64," + offlineImage + "' height='150' style='border:#999999 thin solid; padding:10px;'>&nbsp;&nbsp;"         
+
+    }
+
+
+    function showProduct(ProductId) {
+
+        var splitProducts = getCookie("productList").split("|")
+        for(i=0;i<splitProducts.length;i++) {
+            var productSplit = splitProducts[i].split(",")
+            if(productSplit[0]==ProductId) {
+                var ProductId = productSplit[0];
+                var Description = productSplit[1];
+                var Short = productSplit[2];
+                var SellPrice = productSplit[3];
+                var FullInfo = productSplit[5];
+            }
+        }
+
+        loadOffline("screen_productdisplay");
+
+        document.getElementById("productnametitle").innerHTML=Description
+        document.getElementById("productprice").innerHTML="$"+SellPrice
+        document.getElementById("productshort").innerHTML=Short
+        document.getElementById("productfullinfo").innerHTML=FullInfo
+
+        document.getElementById("imgList").innerHTML=""
+
+        showImageOnProduct("img_primary_"+ProductId)
+
+    }
+
+
+
+    function viewSyncedData() {
+
+
+
+        loadOffline("systemdiagnostics");
+
+        document.getElementById('productlistoutput').innerHTML=getCookie('productList')
+        document.getElementById('categorylistoutput').innerHTML=getCookie('categoryList')
+        document.getElementById('jobdataoutput').innerHTML=getCookie('jobData')
+
+        var productList = getCookie("productList");
+        var productListSplit = productList.split("|");
+
+        var i=0;
+        for(i=0;i<productListSplit.length;i++) {
+            var splitLine = productListSplit[i].split(",")
+            var ProductId = splitLine[0];
+            var Description = splitLine[1];
+            var Short = splitLine[2];
+            var SellPrice = splitLine[3];
+            var CatId = splitLine[4];
+
+            var cookiedata = getCookie("img_primary_"+ProductId)
+
+            
+            document.getElementById('productprimaryimages').innerHTML =  document.getElementById('productprimaryimages').innerHTML + "<img src='data:image/png;base64,"+cookiedata+"' width='100'>"
+
+        }
+
+    }
+
+    function showJobSheets() {
+
+        loadOffline("screen_jobsheetstart");
+
+        var jobData = getCookie("jobData");
+        var jobDataSplit = jobData.split("|")
+
+        document.getElementById("jobList").innerHTML = ""
+
+        for(i=0;i<jobDataSplit.length;i++) {
+            var jobSplit = jobDataSplit[i].split(",")
+
+            var FullName = jobSplit[5]
+            var Suburb = jobSplit[8]
+            
+            document.getElementById("jobList").innerHTML = document.getElementById("jobList").innerHTML + "<table class='table table-striped table-bordered table-hover' style='background-color:#EEEEEE;' width='100%'><tr><td width='50%' style='padding:10px;'>"+FullName+"</td><td width='35%' style='padding:10px;'>" + Suburb + "</td><td width='15%' style='padding:10px;'>Start</td></tr></table>"
+
+
+        }
+
+        //document.getElementById("jobList").innerHTML = document.getElementById("jobList").innerHTML + "</table>"
+
+
+    }
+
+
 
 
 	</script>
@@ -578,7 +727,7 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <!--a class="navbar-brand" href="#" onclick="loadScript('publichome')">Javelin</a--><span class="navbar-brand" id="topbartext">Geeks on Wheels Javelin</span>
+                <!--a class="navbar-brand" href="#" onclick="loadScript('publichome')">Javelin</a--><span class="navbar-brand" id="topbartext">Geeks on Wheels</span>
             </div>
             <!-- /.navbar-header -->
 
@@ -653,14 +802,30 @@
                             </div>
                             <!-- /input-group -->
                         </li>
+                        <li onclick="loadOffline('screen_dashboard')">
+                            <a href="#"><i class="fa fa-dashboard fa-fw"></i> Dashboard</a>
+                           
+                        </li>
+                        <li onclick="runSync()">
+                            <a href="#"><i class="fa fa-sync fa-fw"></i> Sync Online</a>
+                           
+                        </li>
+                        <li onclick="viewSyncedData()">
+                            <a href="#"><i class="fa fa-sync fa-fw"></i> View Synced Data</a>
+                           
+                        </li>
+                        <li onclick="showJobSheets()">
+                            <a href="#"><i class="fa fa-list-alt fa-fw"></i> Job Sheets</a>
+                           
+                        </li>
                         <li class="active">
                             <a href="#"><i class="fa fa-shopping-cart fa-fw"></i> Product Categories<span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level collapse in" aria-expanded="true">
                                 <li>
-                                    <a href="#">Routers</a>
+                                    <a href="#" onclick="showProductCategory(1)">Routers</a>
                                 </li>
                                 <li>
-                                    <a href="#">External HDD</a>
+                                    <a href="#" onclick="showProductCategory(2)">External HDD</a>
                                 </li>
                             </ul>
                             <!-- /.nav-second-level -->
@@ -686,7 +851,155 @@
         </nav>
 
         <div id="page-wrapper" style="padding-top:40px;">
-           &nbsp;  
+
+           <div class="offlinescreen" style="display:none;" id="screen_dashboard">
+
+            <br><br>
+
+                Welcome to Javlin for Geeks on Wheels! You are currently working in sync mode, where data is downloaded and stored on the device and information is shown from the devices storage. Please click Sync to update the app and stored data.
+
+                <br><br>
+
+                Click a product category in the left to start viewing!
+
+           </div>
+
+           <div class="offlinescreen" style="display:none;" id="screen_productcategory">
+
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h1 class="page-header" id="productcategorytitle">Product Category</h1>
+                    </div>
+                    <!-- /.col-lg-12 -->
+                </div>
+                <div class="row">
+                    <div class="col-lg-12" id="productcategorylist">
+
+                    </div>
+                    <!-- /.col-lg-12 -->
+                </div>
+
+           </div>
+
+           <div class="offlinescreen" style="display:none;" id="screen_productdisplay">
+
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h1 class="page-header" id="productnametitle">Please Choose a Product from the Category</h1>
+                        <span id="productprice" style="font-size:24px;font-weight:bold;"></span>
+                    </div>
+                    <!-- /.col-lg-12 -->
+                </div><br>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div style="overflow:auto; border:#999999 medium solid; padding:20px;" id="imgList"> </div>
+                    </div>
+                    <!-- /.col-lg-12 -->
+                </div><br><br>
+                <div class="row">
+                    <div class="col-lg-12" id="productshort" style="font-size:18px;">
+
+                    </div>
+                    <!-- /.col-lg-12 -->
+                </div><br><br>
+                <div class="row">
+                    <div class="col-lg-12" id="productfullinfo">
+
+                    </div>
+                    <!-- /.col-lg-12 -->
+                </div>
+
+           </div>
+
+           <div class="offlinescreen" style="display:none;" id="loginscreen">
+
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h1 class="page-header" id="productnametitle">Please Sign-In to Javelin</h1>
+                    </div>
+                    <!-- /.col-lg-12 -->
+                </div><br>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <button type="button" onclick="showLoginScreen()" class="btn btn-primary btn-lg btn-block">Sign In</button>
+                    </div>
+                    <!-- /.col-lg-12 -->
+                </div>
+
+           </div>
+
+           <div class="offlinescreen" style="display:none;" id="screen_jobsheetstart">
+
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h1 class="page-header" id="productnametitle">Job Sheets</h1>
+                    </div>
+                    <!-- /.col-lg-12 -->
+                </div><br>
+                <div class="row">
+                    <div class="col-lg-12">
+                       <div id="jobList"></div>
+                    </div>
+                    <!-- /.col-lg-12 -->
+                </div>
+
+           </div>
+
+            <div class="offlinescreen" style="display:none;" id="systemdiagnostics">
+
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h1 class="page-header">System Diagnostics</h1>
+                    </div>
+                    <!-- /.col-lg-12 -->
+                </div>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h4>Product List:</h4>
+                        <pre id="productlistoutput">
+
+                        </pre>
+                    </div>
+                    <!-- /.col-lg-12 -->
+                </div>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h4>Category List:</h4>
+                        <pre id="categorylistoutput">
+
+                        </pre>
+                    </div>
+                    <!-- /.col-lg-12 -->
+                </div>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h4>Product Primary Images</h4>
+                        <pre id="productprimaryimages">
+
+                        </pre>
+                    </div>
+                    <!-- /.col-lg-12 -->
+                </div>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h4>Job Data:</h4>
+                        <pre id="jobdataoutput">
+
+                        </pre>
+                    </div>
+                    <!-- /.col-lg-12 -->
+                </div>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h4>Action: Clear Data and Re-Sync</h4>
+                        <pre id="categorylistoutput"><a href="#" onclick="runSync();viewSyncedData()";>Re-Sync Data</a></pre>
+                    </div>
+                    <!-- /.col-lg-12 -->
+                </div>
+
+           </div>
+
+
         </div>
         <!-- /#page-wrapper -->
 
@@ -710,6 +1023,7 @@
     <!-- Custom Theme JavaScript -->
     <script src="dist/js/sb-admin-2.js"></script>
 <div id="CLICKA_currentSessionId" style="display:none;">Def</div>
+<div id="CLICKA_currentMode" style="display:none;">Offline</div>
 </body>
 
 </html>

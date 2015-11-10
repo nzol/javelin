@@ -1,6 +1,6 @@
 CACHE MANIFEST
 #VERSION_BUILD=22
-offline.html
+index.html
 bower_components/bootstrap/dist/css/bootstrap.min.css
 bower_components/metisMenu/dist/metisMenu.min.css
 dist/css/timeline.css
