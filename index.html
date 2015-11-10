@@ -115,9 +115,9 @@
 
     }
 
-    $(window).load(function(){
+    function onAppLoad() {
 
-        var ping = ajaxRequest(serverLocation + "system/internaltarget.php?Action=ping");
+         var ping = ajaxRequest(serverLocation + "system/internaltarget.php?Action=ping");
         if(ping=="pong") {
             // WORKING ONLINE
             document.getElementById("CLICKA_currentMode").innerHTML="Online"
@@ -162,6 +162,12 @@
             }
 
         }
+
+    }
+
+    $(window).load(function(){
+
+       
 
        
     });
@@ -617,7 +623,7 @@
 
 </head>
 
-<body>
+<body onload="onAppLoad()">
 
     <div class="modal fade" id="loginToJavelin" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
         <div class="modal-dialog">
