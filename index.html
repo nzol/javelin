@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" manifest="http://localhost/javelin/offlinemanifest.mf">
+<html lang="en" manifest="http://bagsed-it.com/javelin/offlinemanifest.mf">
 
 <head>
 
@@ -39,7 +39,7 @@
 
     <script type="text/javascript">
 
-    var serverLocation = "http://172.18.1.74/javelin_backend/"
+    var serverLocation = "http://bagsed-it.com/javelin_backend/"
 
     function parseGet(val) {
         var result = "Not found",
@@ -121,6 +121,7 @@
         if(ping=="pong") {
             // WORKING ONLINE
             document.getElementById("CLICKA_currentMode").innerHTML="Online"
+            runSync()
         }
         else {
             document.getElementById("CLICKA_currentMode").innerHTML="Offline"
@@ -128,11 +129,15 @@
         }
 
         var SessionIdCookie = getCookie("CLICKA_currentSessionId");
-        
 
-        if(SessionIdCookie=="0") {
+
+        document.getElementById("side-menu").innerHTML = getCookie("menuList");
+
+
+        if(SessionIdCookie===null) {
             document.getElementById("CLICKA_currentSessionId").innerHTML = "0";
             document.getElementById("side-menu").style.display="none";
+            loadOffline("loginscreen");
         }
         else {
             document.getElementById("CLICKA_currentSessionId").innerHTML = SessionIdCookie;
@@ -165,12 +170,12 @@
 
     }
 
-    $(window).load(function(){
+   // $(window).load(function(){
 
        
 
        
-    });
+   // });
 
 
 
@@ -340,7 +345,7 @@
             document.getElementById("CLICKA_currentSessionId").innerHTML = LoginResponse;
             setCookie("CLICKA_currentSessionId",LoginResponse);
             document.getElementById("side-menu").style.display="";
-
+            runSync();
             loadOffline('screen_dashboard');
         }
 
@@ -403,13 +408,22 @@
 
     function runSync() {
 
-        alert("STARTING SYNC")
+        document.getElementById("syncstatus").innerHTML = "Syncing..."
+
 
         var productList = ajaxRequest(serverLocation + "system/internaltarget.php?Action=productList");
         setCookie("productList",productList);
         
         var categoryList = ajaxRequest(serverLocation + "system/internaltarget.php?Action=categoryList");
         setCookie("categoryList",categoryList);
+
+        var SessionId = getCookie("CLICKA_currentSessionId");
+
+
+        var menuList = ajaxRequest(serverLocation + "system/internaltarget.php?Action=showMenu&SessionId=" + SessionId);
+        setCookie("menuList",menuList);
+
+        document.getElementById("side-menu").innerHTML = menuList
 
         var productListSplit = productList.split("|");
         for(i=0;i<productListSplit.length;i++) {
@@ -419,12 +433,11 @@
             setCookie("img_primary_"+productId,ImgBase)
         }
 
-        var SessionId = getCookie("CLICKA_currentSessionId");
 
         var jobData = ajaxRequest(serverLocation + "system/internaltarget.php?Action=jobData&SessionId=" + SessionId);
         setCookie("jobData",jobData);
 
-        alert("Sync Complete")
+        document.getElementById("syncstatus").innerHTML = "Complete. Resync"
 
 
     }
@@ -626,6 +639,8 @@
 </head>
 
 <body onload="onAppLoad()">
+    <div id="normalloading" style="position:fixed; width:75px; right:0px; bottom:0px; display:none; z-index:10000;"><img src="loadingcat.gif" width="100%"></div>
+
 
     <div class="modal fade" id="loginToJavelin" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
         <div class="modal-dialog">
@@ -727,7 +742,7 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <!--a class="navbar-brand" href="#" onclick="loadScript('publichome')">Javelin</a--><span class="navbar-brand" id="topbartext">Geeks on Wheels</span>
+                <!--a class="navbar-brand" href="#" onclick="loadScript('publichome')">Javelin</a--><span class="navbar-brand" id="topbartext">Geeks on Wheels TechApp</span>
             </div>
             <!-- /.navbar-header -->
 
@@ -790,61 +805,17 @@
 
             <div class="navbar-default sidebar" role="navigation">
                 <div class="sidebar-nav navbar-collapse collapse" aria-expanded="false">
-                    <ul class="nav" id="side-menu" style="display:none;">
-                        <li class="sidebar-search">
-                            <div class="input-group custom-search-form">
-                                <input type="text" class="form-control" placeholder="Search..." id="searchQ">
-                                <span class="input-group-btn">
-                                <button class="btn btn-default" type="button" id="searchbutton" onclick="doSearch()">
-                                    <i class="fa fa-search"></i>
-                                </button>
-                            </span>
-                            </div>
-                            <!-- /input-group -->
-                        </li>
-                        <li onclick="loadOffline('screen_dashboard')">
-                            <a href="#"><i class="fa fa-dashboard fa-fw"></i> Dashboard</a>
+                <ul class="nav">
+                    <li onclick="runSync()">
+                            <a href="#"><i class="fa fa-rotate-left fa-fw"></i> <span id="syncstatus">Sync Online</span></a>
                            
                         </li>
-                        <li onclick="runSync()">
-                            <a href="#"><i class="fa fa-sync fa-fw"></i> Sync Online</a>
-                           
-                        </li>
-                        <li onclick="viewSyncedData()">
-                            <a href="#"><i class="fa fa-sync fa-fw"></i> View Synced Data</a>
-                           
-                        </li>
-                        <li onclick="showJobSheets()">
-                            <a href="#"><i class="fa fa-list-alt fa-fw"></i> Job Sheets</a>
-                           
-                        </li>
-                        <li class="active">
-                            <a href="#"><i class="fa fa-shopping-cart fa-fw"></i> Product Categories<span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level collapse in" aria-expanded="true">
-                                <li>
-                                    <a href="#" onclick="showProductCategory(1)">Routers</a>
-                                </li>
-                                <li>
-                                    <a href="#" onclick="showProductCategory(2)">External HDD</a>
-                                </li>
-                            </ul>
-                            <!-- /.nav-second-level -->
-                        </li>
-                       
-                        <li onclick="logout()">
-                            <a href="#"><i class="fa fa-user fa-fw"></i> Logout</a>
-                            <!--ul class="nav nav-second-level">
-                                <li>
-                                    <a href="blank.html">Blank Page</a>
-                                </li>
-                                <li>
-                                    <a href="login.html">Login Page</a>
-                                </li>
-                            </ul>
-                            <!-- /.nav-second-level -->
-                        </li>
-                    </ul>
+                    
                 </div>
+
+                <ul class="nav" style="display:none;" id="side-menu">
+
+                </ul>
                 <!-- /.sidebar-collapse -->
             </div>
             <!-- /.navbar-static-side -->
