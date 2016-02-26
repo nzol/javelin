@@ -408,6 +408,8 @@
 
     function runSync() {
 
+        alert("SYNCING BEGINNING");
+
         document.getElementById("syncstatus").innerHTML = "Syncing..."
 
 
@@ -422,6 +424,9 @@
 
         var menuList = ajaxRequest(serverLocation + "system/internaltarget.php?Action=showMenu&SessionId=" + SessionId);
         setCookie("menuList",menuList);
+
+        alert(menuList);
+
 
         document.getElementById("side-menu").innerHTML = menuList
 
