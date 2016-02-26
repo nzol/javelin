@@ -2,8 +2,8 @@
     <widget xmlns   = "http://www.w3.org/ns/widgets"
         xmlns:gap   = "http://phonegap.com/ns/1.0"
         id          = "com.nzol.javelin"
-        versionCode = "40" 
-        version     = "1.0.0.40" >
+        versionCode = "42" 
+        version     = "1.0.0.42" >
 
     <!-- versionCode is optional and Android only -->
 
