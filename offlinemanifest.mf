@@ -1,5 +1,5 @@
 CACHE MANIFEST
-#VERSION_BUILD=42
+#VERSION_BUILD=43
 index.html
 bower_components/bootstrap/dist/css/bootstrap.min.css
 bower_components/metisMenu/dist/metisMenu.min.css
