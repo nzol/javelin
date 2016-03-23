@@ -115,7 +115,7 @@
 
     }
 
-    function onAppLoad() {
+    function onAppLoad() {          // COMPLETELY CONVERTED
 
         alert("TESTED NEW APP ONLOAD")
 
@@ -195,6 +195,7 @@
                 loadOffline('loginscreen');
             }
             else {
+                alert("YOU ARE LOGGED IN LOADING LAST SCRIPT")
                 loadOffline(LastScript);
             }
 
@@ -444,23 +445,63 @@
 
         document.getElementById("syncstatus").innerHTML = "Syncing..."
 
+        $.ajax({
+           type: 'GET',
+            url: serverLocation + "system/internaltarget.php?Action=productList",
+            async: false,
+            jsonpCallback: 'jsonCallback',
+            contentType: "application/json",
+            dataType: 'jsonp',
+            success: function(json) {
+                setCookie("productList",json.jsonReturns[0].returnData);
+            }
+        });
 
-        var productList = ajaxRequest(serverLocation + "system/internaltarget.php?Action=productList");
-        setCookie("productList",productList);
+
+        //var productList = ajaxRequest(serverLocation + "system/internaltarget.php?Action=productList");
+        //setCookie("productList",productList);
+
+
+        $.ajax({
+           type: 'GET',
+            url: serverLocation + "system/internaltarget.php?Action=categoryList",
+            async: false,
+            jsonpCallback: 'jsonCallback',
+            contentType: "application/json",
+            dataType: 'jsonp',
+            success: function(json) {
+                setCookie("categoryList",json.jsonReturns[0].returnData);
+            }
+        });
         
-        var categoryList = ajaxRequest(serverLocation + "system/internaltarget.php?Action=categoryList");
-        setCookie("categoryList",categoryList);
+        //var categoryList = ajaxRequest(serverLocation + "system/internaltarget.php?Action=categoryList");
+        //setCookie("categoryList",categoryList);
 
         var SessionId = getCookie("CLICKA_currentSessionId");
 
 
-        var menuList = ajaxRequest(serverLocation + "system/internaltarget.php?Action=showMenu&SessionId=" + SessionId);
-        setCookie("menuList",menuList);
 
-        alert(menuList);
+        $.ajax({
+           type: 'GET',
+            url: serverLocation + "system/internaltarget.php?Action=showMenu&SessionId=" + SessionId,
+            async: false,
+            jsonpCallback: 'jsonCallback',
+            contentType: "application/json",
+            dataType: 'jsonp',
+            success: function(json) {
+                alert(json.jsonReturns[0].returnData)
+                setCookie("menuList",json.jsonReturns[0].returnData);
+                document.getElementById("side-menu").innerHTML = json.jsonReturns[0].returnData
+
+            }
+        });
 
 
-        document.getElementById("side-menu").innerHTML = menuList
+        //var menuList = ajaxRequest();
+       // setCookie("menuList",menuList);
+
+
+        var productList = getCookie("productList");
 
         var productListSplit = productList.split("|");
         for(i=0;i<productListSplit.length;i++) {
@@ -471,13 +512,27 @@
         }
 
 
-        var jobData = ajaxRequest(serverLocation + "system/internaltarget.php?Action=jobData&SessionId=" + SessionId);
-        setCookie("jobData",jobData);
+       // var jobData = ajaxRequest(serverLocation + "system/internaltarget.php?Action=jobData&SessionId=" + SessionId);
+       // setCookie("jobData",jobData);
 
         document.getElementById("syncstatus").innerHTML = "Complete. Resync"
 
 
     }
+
+    function runSyncStep2() {
+
+
+
+
+    }
+
+
+
+
+
+
+
 
     function showOfflineImage(CookieName,ImageId) {
 
