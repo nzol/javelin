@@ -1,1090 +1,493 @@
 <!DOCTYPE html>
-<html lang="en" manifest="http://bagsed-it.com/javelin/offlinemanifest.mf">
-
+<html>
 <head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Geeks on Wheels</title>
 
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="description" content="">
-    <meta name="author" content="">
+<link href="css/bootstrap.min.css" rel="stylesheet">
+<link href="css/datepicker3.css" rel="stylesheet">
+<link href="css/styles.css" rel="stylesheet">
 
-    <title>Javelin</title>
+<!--Icons-->
+<script src="js/lumino.glyphs.js"></script>
+<script src="jquery.js"></script>
 
-    <!-- Bootstrap Core CSS -->
-    <link href="bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+<script type="text/javascript">
 
- 
+var serverLocation = "http://bagsed-it.com/javelin2_server/";
 
-    <!-- Custom CSS -->
-    <link href="dist/css/sb-admin-2.css" rel="stylesheet">
 
-  
- 
+$(window).load(function(){
 
-    <!-- Custom Fonts -->
-    <link href="bower_components/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+// 0. show the loading screen
 
-    <link rel="apple-touch-icon" href="bower_components/coffee-icon.png">
+document.getElementById("screen_appload").style.display="";
 
-    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
-    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-    <!--[if lt IE 9]>
-        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
-    <![endif]-->
+// 1. Check login status
 
-    <!--script src="http://code.jquery.com/jquery-1.11.2.min.js"></script-->
+$.ajax({
+   type: 'GET',
+    url: serverLocation + "endpoint.php?Action=checkSignIn",
+    async: false,
+    jsonpCallback: 'jsonCallback',
+    contentType: "application/json",
+    dataType: 'jsonp',
+    success: function(json) {
+        if(json.jsonReturns[0].returnData=="registered") {
+            // We are running online and the user is not a guest. Now show the last viewed offline screen. Will go to the dashboard by default for now
+            alert("REGISTERED")
+            showScreen("dashboard")
 
-    <script type="text/javascript">
-
-    var serverLocation = "http://bagsed-it.com/javelin_backend/"
-
-    function parseGet(val) {
-        var result = "Not found",
-            tmp = [];
-        location.search
-        //.replace ( "?", "" ) 
-        // this is better, there might be a question mark inside
-        .substr(1)
-            .split("&")
-            .forEach(function (item) {
-            tmp = item.split("=");
-            if (tmp[0] === val) result = decodeURIComponent(tmp[1]);
-        });
-        return result;
-    }    
+        }
+        else {
+		    // We are running online and the user is a guest. Must be connected to server to sign in
+		    alert("GUEST")
+			$("#screen_appload").fadeOut(500)
+			document.getElementById("screen_signin").style.display="";		    
+    
+}
+    },
+    error: function(e) {
+            alert("ERROR "+e.message)
+            // We are running offline and will show the last viewed offline screen if available.
+    
+    }
+});
 
 
    
-    function getCookie(cname) {
-        return localStorage.getItem(cname)
-    }
-    function setCookie(cname,val) {
-        localStorage.setItem(cname,val)
-        return true;
+});
+
+function showScreen(screenname) {
+
+
+	// first, stop showing all screens
+
+	$(".modal-content").fadeOut(500);
+
+
+	// then display the screenname given
+
+	document.getElementById("screen_"+screenname).style.display=""
+
+}
+
+function setLocalVar(VarName,VarVal) {
+
+	localStorage.setItem(VarName,VarVal)
+}
+
+function getLocalVar(VarName) {
+
+    if(localStorage.getItem(VarName) === null) {
+
+        return "nocookie";
 
     }
+    else {
 
-    function logout() {
-
-        var SessionId = getCookie("CLICKA_currentSessionId");
-
-        setCookie("CLICKA_currentSessionId","0");
-
-        var logout = ajaxRequest(serverLocation + "system/internaltarget.php?Action=logout&SessionId=" + SessionId);
-
-        document.getElementById("CLICKA_currentSessionId").innerHTML = "0";
-        document.getElementById("side-menu").style.display="none";
-        document.getElementById("topbartext").innerHTML = "Javelin"
-
-        loadOffline('loginscreen')
-
+        return localStorage.getItem(VarName);
     }
 
+}
 
-    function getSessionVar(VarName) {
-
-        var SessionId = document.getElementById("CLICKA_currentSessionId").innerHTML;
-/*
-        var VarVal = ajaxRequest(serverLocation + "system/internaltarget.php?Action=getSessionVar&SessionId=" + SessionId + "&VarName=" + VarName);
+function startOnlineReload() {
 
-        return VarVal;*/
+	document.getElementById("screen_genericloading").style.display=""
 
-        return localStorage.getItem(SessionId + "_" + VarName)
 
-    }
+	// first, get a list of categories and store them in an offline storage.
 
-    function setSessionVar(VarName,VarVal) {
-
-        var SessionId = document.getElementById("CLICKA_currentSessionId").innerHTML;
-/*
-
-        var Resp = ajaxRequest(serverLocation + "system/internaltarget.php?Action=setSessionVar&SessionId=" + SessionId + "&VarName=" + VarName + "&VarVal=" + VarVal);
+	$.ajax({
+	   type: 'GET',
+	    url: serverLocation + "endpoint.php?Action=downloadCategories",
+	    async: false,
+	    jsonpCallback: 'jsonCallback',
+	    contentType: "application/json",
+	    dataType: 'jsonp',
+	    success: function(json) {
+	        
+	        // now put response into JS offline storage
 
-        if(Resp=="success") {
-            return true;
-        }
-        else {
-            return false;
-        }*/
+	        setLocalVar("javelin_categories",json.jsonReturns[0].returnData)
 
-        localStorage.setItem(SessionId + "_"+ VarName,VarVal)
+	        onlineReload2();
 
 
-    }
+	    },
+	    error: function(e) {
+	            alert("CATEGORY DOWNLOAD ERROR "+e.message)
+	            // There is a program error
+	    
+	    }
+	});
 
-    function onAppLoad() {          // COMPLETELY CONVERTED
+	
 
-        alert("TESTED NEW APP ONLOAD")
 
-        $.ajax({
-           type: 'GET',
-            url: serverLocation + "system/jsonptarget.php?Action=ping",
-            async: false,
-            jsonpCallback: 'jsonCallback',
-            contentType: "application/json",
-            dataType: 'jsonp',
-            success: function(json) {
-                if(json.jsonReturns[0].returnData=="pong") {
-                    document.getElementById("CLICKA_currentMode").innerHTML="Online"
-                    alert("ONLINE " + json.jsonReturns[0].returnData)
-                    runSync()
-                }
-                else {
-            document.getElementById("CLICKA_currentMode").innerHTML="Offline"
-                    alert("OFFLINE ELSE ")
-            
-        }
-            },
-            error: function(e) {
-                    alert("OFFLINE ERROR " + e.message)
+}
 
-            document.getElementById("CLICKA_currentMode").innerHTML="Offline"
-            
-            }
-        });
+function onlineReload2() {
+	// now download the products
 
-        
-        /* OLD STARTUP CEHCK FOR ONLINE
-        var ping = ajaxRequest(serverLocation + "system/internaltarget.php?Action=ping");
-        if(ping=="pong") {
-            // WORKING ONLINE
-            document.getElementById("CLICKA_currentMode").innerHTML="Online"
-            runSync()
-        }
-        else {
-            document.getElementById("CLICKA_currentMode").innerHTML="Offline"
-            
-        }
-        */
 
-        var SessionIdCookie = getCookie("CLICKA_currentSessionId");
 
+	$.ajax({
+	   type: 'GET',
+	    url: serverLocation + "endpoint.php?Action=downloadProducts",
+	    async: false,
+	    jsonpCallback: 'jsonCallback',
+	    contentType: "application/json",
+	    dataType: 'jsonp',
+	    success: function(json) {
+	        
+	        // now put response into JS offline storage
 
-        document.getElementById("side-menu").innerHTML = getCookie("menuList");
+	        setLocalVar("javelin_products",json.jsonReturns[0].returnData)
 
+	       // alert("Online reload complete")
 
-        if(SessionIdCookie===null) {
-            document.getElementById("CLICKA_currentSessionId").innerHTML = "0";
-            document.getElementById("side-menu").style.display="none";
-            loadOffline("loginscreen");
-        }
-        else {
-            document.getElementById("CLICKA_currentSessionId").innerHTML = SessionIdCookie;
-            document.getElementById("side-menu").style.display="";
-        }
+		loadOfflineValues()
 
-        var get_go = parseGet("go");
-        
-        var LastScript = getSessionVar("currentScript");
-        var LastScriptParams = getSessionVar("currentScriptParams");
-        LastScript = typeof LastScript !== 'undefined' ? LastScript : "dashboard";
-        LastScriptParams = typeof LastScriptParams !== 'undefined' ? LastScriptParams : "param2:value2;param3:value3";
+	$("#screen_genericloading").fadeOut(500);
 
-        //alert(LastScript)
 
-        if(get_go=="newSession") {
 
-            logout();
+	    },
+	    error: function(e) {
+	            alert("PRODUCT DOWNLOAD ERROR "+e.message)
+	            // There is a program error
+	    
+	    }
+	});
 
-        } else {
 
-            if(SessionIdCookie=="0") {
-                loadOffline('loginscreen');
-            }
-            else {
-                alert("YOU ARE LOGGED IN LOADING LAST SCRIPT")
-                loadOffline(LastScript);
-            }
 
-        }
 
-    }
+	// online reload is complete.
 
-   // $(window).load(function(){
 
-       
+	
+}
 
-       
-   // });
+function loadOfflineValues() {
 
+	// first populate the product category list
 
+	var CategoryData = getLocalVar("javelin_categories");
+	var CateDataSplit = CategoryData.split(";")
 
-    function ajaxRequest(path) {
+	var outputData = ""
 
-       // document.getElementById('loadingdiv').style.visibility="visible"
+	for(i=0; i < CateDataSplit.length; i++) {
 
-        var xmlhttp;
-        xmlhttp=new XMLHttpRequest();
-     
-        xmlhttp.open("GET",path,false);
-        xmlhttp.send();
-        var RESPONSE = xmlhttp.responseText;
-          
-        return RESPONSE;
-        delete window.xmlhttp;
+		var spliti = CateDataSplit[i].split(",")
 
-        document.getElementById('loadingdiv').style.visibility="hidden"
+		var CatId = spliti[0];
+		var CatName = spliti[1];
 
-       /* return $.ajax({
+		var outputData = outputData + "<button type=\"button\" class=\"btn btn-primary btn-lg btn-block\" onclick=\"displayCategory("+CatId+")\">"+CatName+"</button>";
 
-        type: "GET",
-        url: path,
-        async: false
-    }).responseText;*/
+	}
 
-    }
+	document.getElementById("categoryListOptions").innerHTML = outputData
 
-    function loadOffline(ScreenAlias) {
+}
 
-        $(".offlinescreen").hide()
-        $("#"+ScreenAlias).fadeIn(1000)
-       // document.getElementById(ScreenAlias).style.display=""
 
-        setSessionVar("currentScript",ScreenAlias)
+function displayCategory(catId) {
 
-    }
+	var ProductData = getLocalVar("javelin_products");
+	var ProdDataSplit = ProductData.split(";")
 
+	var outputData = "<button type=\"button\" class=\"btn btn-primary btn-lg btn-block\" onclick=\"loadOfflineValues()\">Back to Categories</button>";
 
-    function loadScript(ScriptAlias,Params) {
+	for(i=0; i<ProdDataSplit.length;i++) {
 
-        document.getElementById('loadingdiv').style.visibility="hidden";
+		var spliti = ProdDataSplit[i].split(",")
 
-        Params = typeof Params !== 'undefined' ? Params : "param2:value2;param3:value3";
+		var ProductId = spliti[0];
+		var DisplayName = spliti[1];
+		var CategoryId = spliti[4];
 
-        var ping = ajaxRequest(serverLocation + "system/internaltarget.php?Action=ping");
-        if(ping=="pong") {
-            // all is fine with the world.
-        }
-        else {
-            $('#notConnectedDisplay').modal('show');
-        }
+		if(CategoryId==catId) {
 
-        var intervalId = getSessionVar("currentIntervalId");
+		var outputData = outputData + "<button type=\"button\" class=\"btn btn-primary btn-lg btn-block\" onclick=\"displayProduct("+ProductId+")\">"+DisplayName+"</button>";
 
-        //alert(intervalId)
-        clearInterval(intervalId)
+		}
 
-        var CLICKA_SessionId = document.getElementById("CLICKA_currentSessionId").innerHTML;
 
-        $.ajax({
-          url: serverLocation + "system/internaltarget.php?Action=requestScript&ScriptAlias="+ScriptAlias+"&Params=" + Params + "&SessionId=" + CLICKA_SessionId,
-          type: 'GET',
-          //data: 'twitterUsername=jquery4u',
-          success: function(data) {
-            //called when successful
-            parseLoadScript(data,ScriptAlias,Params)
-          },
-          error: function(e) {
-            alert("A MALFUNCTION MALFUNCTIONED - " + e.message)
-            //called when there is an error
-            //console.log(e.message);
-          }
-        });
+	}
 
-        /*var scriptoutputdata = ajaxRequest(serverLocation + "system/internaltarget.php?Action=requestScript&ScriptAlias="+ScriptAlias+"&Params=" + Params + "&SessionId=" + CLICKA_SessionId);
+	document.getElementById("categoryListOptions").innerHTML = outputData
 
-        if(scriptoutputdata.indexOf("<ERR>") > -1) {
-            $('#errorDisplay').modal('show');
-            var ErrorDescription = ajaxRequest(serverLocation + "system/externaltarget.php?Action=requestErrorInfo&ErrCode="+scriptoutputdata+"&Field=Description");
-            var ErrorSolution = ajaxRequest(serverLocation + "system/externaltarget.php?Action=requestErrorInfo&ErrCode="+scriptoutputdata+"&Field=Solution");
-            document.getElementById("errDescription").innerHTML = ErrorDescription
-            document.getElementById("errSolution").innerHTML = ErrorSolution
+}
 
-        }
-        else {
-            if(document.getElementById('page-wrapper').innerHTML!=scriptoutputdata) {
-            document.getElementById('page-wrapper').innerHTML = scriptoutputdata;
-            }
+function displayProduct(givenproductId) {
 
-             if(CLICKA_SessionId=="0") {
-                // dont set
-            } else {
-                setSessionVar("currentScript",ScriptAlias);
-                setSessionVar("currentScriptParams",Params);
-            }
-        }  */      
+	showScreen("productinfo");
 
-        document.getElementById('loadingdiv').style.visibility="hidden";
+	var ProductData = getLocalVar("javelin_products");
+	var ProdDataSplit = ProductData.split(";")
 
-        
-               
+	var outputData = "";
 
+	for(i=0; i<ProdDataSplit.length;i++) {
 
+		var spliti = ProdDataSplit[i].split(",")
 
-    }
+		var ProductId = spliti[0];
+		var DisplayName = spliti[1];
+		var DisplayInfo = spliti[2];
+		var CategoryId = spliti[4];
 
-    function parseLoadScript(scriptoutputdata,ScriptAlias,Params) {
+		if(ProductId==givenproductId) {
 
-       // alert(scriptoutputdata)
-        var CLICKA_SessionId = document.getElementById("CLICKA_currentSessionId").innerHTML;
+			//var outputData = outputData + "<button type=\"button\" class=\"btn btn-primary btn-lg btn-block\" onclick=\"displayProduct("+ProductId+")\">"+DisplayName+"</button>";
 
+			document.getElementById("productName").innerHTML = DisplayName
+			document.getElementById("productData").innerHTML = DisplayInfo
 
-        if(scriptoutputdata.indexOf("<ERR>") > -1) {
-            $('#errorDisplay').modal('show');
-            var ErrorDescription = ajaxRequest(serverLocation + "system/externaltarget.php?Action=requestErrorInfo&ErrCode="+scriptoutputdata+"&Field=Description");
-            var ErrorSolution = ajaxRequest(serverLocation + "system/externaltarget.php?Action=requestErrorInfo&ErrCode="+scriptoutputdata+"&Field=Solution");
-            document.getElementById("errDescription").innerHTML = ErrorDescription
-            document.getElementById("errSolution").innerHTML = ErrorSolution
+		}
 
-        }
-        else {
-            if(document.getElementById('page-wrapper').innerHTML!=scriptoutputdata) {
-            //document.getElementById('page-wrapper').innerHTML = scriptoutputdata;
-            }
 
-             if(CLICKA_SessionId=="0") {
-                // dont set
-            } else {
-                setSessionVar("currentScript",ScriptAlias);
-                setSessionVar("currentScriptParams",Params);
-            }
-        }  
+	}
 
-         $("#page-wrapper").find("script").each(function(i) {
-                    eval($(this).text());
-                scriptLoaded();
 
-                });  
 
+}
 
-    }
 
 
-    function submitLogin() {
+function startSignIn() {
 
-        var UsernameEmail = document.getElementById('Username').value;
-        var UserPassword = document.getElementById('Password').value;
+	$("#screen_signin").fadeOut(500);
 
+	document.getElementById("screen_genericloading").style.display="";
 
-        var LoginResponse = ajaxRequest(serverLocation + "system/internaltarget.php?Action=signIn&Username="+UsernameEmail+"&Password="+UserPassword);
+	UserEmailAddress = document.getElementById("UserEmailAddress").value;
+	UserPassword = document.getElementById("UserPassword").value;
 
-        if(LoginResponse=="<ERR>System.InternalTarget.signIn.AccessDenied") {
-            $('#loginToJavelin').modal('hide');
-            $('#errorDisplay').modal('show');
+	$.ajax({
+	   type: 'GET',
+	    url: serverLocation + "endpoint.php?Action=signIn&EmailAddress=" + UserEmailAddress + "&Password=" + UserPassword,
+	    async: false,
+	    jsonpCallback: 'jsonCallback',
+	    contentType: "application/json",
+	    dataType: 'jsonp',
+	    success: function(json) {
+	        if(json.jsonReturns[0].returnData=="success") {
+	            // Sign on was successful
+	            alert("SIGN ON SUCCESS")
+	            // go to dashboard 
+	            $("#screen_genericloading").fadeOut(500);
+	            document.getElementById("screen_dashboard").style.display=""
+	        }
+	        else {
+			    // Sign on failed
+			    alert("Sign on failed. Please try again")
+			    alert(json.jsonReturns[0].returnData)
+				$("#screen_genericloading").fadeOut(500)
+				document.getElementById("screen_signin").style.display="";		    
+	    
+	}
+	    },
+	    error: function(e) {
+	            alert("ERROR "+e.message)
+	            // There is a program error
+	    
+	    }
+	});
 
-            var ErrorDescription = ajaxRequest(serverLocation + "system/externaltarget.php?Action=requestErrorInfo&ErrCode="+LoginResponse+"&Field=Description");
-            var ErrorSolution = ajaxRequest(serverLocation + "system/externaltarget.php?Action=requestErrorInfo&ErrCode="+LoginResponse+"&Field=Solution");
-            document.getElementById("errDescription").innerHTML = ErrorDescription
-            document.getElementById("errSolution").innerHTML = ErrorSolution
-            document.getElementById("errDismiss").onclick=showLoginScreen;
-        }
 
-        else {
-            $('#loginToJavelin').modal('hide');
-            
-            document.getElementById("CLICKA_currentSessionId").innerHTML = LoginResponse;
-            setCookie("CLICKA_currentSessionId",LoginResponse);
-            document.getElementById("side-menu").style.display="";
-            runSync();
-            loadOffline('screen_dashboard');
-        }
 
-       
+}
 
-    }
+</script>
 
-  
-    function showLoginScreen() {
-            $('#loginToJavelin').modal('show');
-            $('#errorDisplay').modal('hide');
-    }
-
-    function doSearch() {
-
-        $('#searchResults').modal('show');
-
-        var retval = ajaxRequest(serverLocation + "system/searchresults.php?q=" + document.getElementById('searchQ').value);
-        document.getElementById('searchResultsArea').innerHTML = retval;
-
-
-    }
-
-    function closeSearch() {
-        $('#searchResults').modal('hide');
-
-    }
-
-    
-    function displayError(scriptoutputdata) {
-
-        $('#errorDisplay').modal('show');
-            var ErrorDescription = ajaxRequest(serverLocation + "system/externaltarget.php?Action=requestErrorInfo&ErrCode="+scriptoutputdata+"&Field=Description");
-            var ErrorSolution = ajaxRequest(serverLocation + "system/externaltarget.php?Action=requestErrorInfo&ErrCode="+scriptoutputdata+"&Field=Solution");
-            document.getElementById("errDescription").innerHTML = ErrorDescription
-            document.getElementById("errSolution").innerHTML = ErrorSolution
-
-
-    }
-
-    function LoadPrimaryImg(productId) {
-       /* var xmlhttp;
-        if (window.XMLHttpRequest) { // code for IE7+, Firefox, Chrome, Opera, Safari
-            xmlhttp = new XMLHttpRequest();
-        } else { // code for IE6, IE5
-            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-        }
-        xmlhttp.onreadystatechange = function() {
-            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {     
-                return "data:image/png;base64," + xmlhttp.responseText;
-                alert(xmlhttp.responseText)
-            }
-        };    
-        xmlhttp.open("GET", serverLocation + "system/internaltarget.php?Action=returnPrimaryImage&ProductId=" + productId);
-        xmlhttp.send(null);*/
-        var data = ajaxRequest(serverLocation + "system/internaltarget.php?Action=returnPrimaryImage&ProductId=" + productId);
-        return data;
-
-    }
-
-    function runSync() {
-
-        alert("SYNCING BEGINNING");
-
-        document.getElementById("syncstatus").innerHTML = "Syncing..."
-
-        $.ajax({
-           type: 'GET',
-            url: serverLocation + "system/internaltarget.php?Action=productList",
-            async: false,
-            jsonpCallback: 'jsonCallback',
-            contentType: "application/json",
-            dataType: 'jsonp',
-            success: function(json) {
-                setCookie("productList",json.jsonReturns[0].returnData);
-            }
-        });
-
-
-        //var productList = ajaxRequest(serverLocation + "system/internaltarget.php?Action=productList");
-        //setCookie("productList",productList);
-
-
-        $.ajax({
-           type: 'GET',
-            url: serverLocation + "system/internaltarget.php?Action=categoryList",
-            async: false,
-            jsonpCallback: 'jsonCallback',
-            contentType: "application/json",
-            dataType: 'jsonp',
-            success: function(json) {
-                setCookie("categoryList",json.jsonReturns[0].returnData);
-            }
-        });
-        
-        //var categoryList = ajaxRequest(serverLocation + "system/internaltarget.php?Action=categoryList");
-        //setCookie("categoryList",categoryList);
-
-        var SessionId = getCookie("CLICKA_currentSessionId");
-
-
-
-        $.ajax({
-           type: 'GET',
-            url: serverLocation + "system/internaltarget.php?Action=showMenu&SessionId=" + SessionId,
-            async: false,
-            jsonpCallback: 'jsonCallback',
-            contentType: "application/json",
-            dataType: 'jsonp',
-            success: function(json) {
-                alert(json.jsonReturns[0].returnData)
-                setCookie("menuList",json.jsonReturns[0].returnData);
-                document.getElementById("side-menu").innerHTML = json.jsonReturns[0].returnData
-
-            }
-        });
-
-
-        //var menuList = ajaxRequest();
-       // setCookie("menuList",menuList);
-
-
-        var productList = getCookie("productList");
-
-        var productListSplit = productList.split("|");
-        for(i=0;i<productListSplit.length;i++) {
-            var productInfoSplit = productListSplit[i].split(",")
-            var productId = productInfoSplit[0];
-            var ImgBase = LoadPrimaryImg(productId);
-            setCookie("img_primary_"+productId,ImgBase)
-        }
-
-
-       // var jobData = ajaxRequest(serverLocation + "system/internaltarget.php?Action=jobData&SessionId=" + SessionId);
-       // setCookie("jobData",jobData);
-
-        document.getElementById("syncstatus").innerHTML = "Complete. Resync"
-
-
-    }
-
-    function runSyncStep2() {
-
-
-
-
-    }
-
-
-
-
-
-
-
-
-    function showOfflineImage(CookieName,ImageId) {
-
-
-        var cookiedata = getCookie(CookieName)
-        document.getElementById(ImageId).src="data:image/png;base64," + cookiedata;
-
-    }
-
-    function showProductCategory(CategoryId) {
-
-       showProductCategory_Screen(CategoryId)
-       showProductCategory_Img(CategoryId)
-
-
-
-    }
-
-    function showProductCategory_Screen(CategoryId) {
-
-        loadOffline("screen_productcategory")
-
-        $("#productcategorylist").hide();
-
-       
-
-        var outputcode = "<div class='table-responsive'> <table class='table table-striped table-bordered table-hover'><tbody>";
-                                        
-                                    
-
-        var productList = getCookie("productList");
-        var productListSplit = productList.split("|");
-
-        var i=0;
-        for(i=0;i<productListSplit.length;i++) {
-            var splitLine = productListSplit[i].split(",")
-            var ProductId = splitLine[0];
-            var Description = splitLine[1];
-            var Short = splitLine[2];
-            var SellPrice = splitLine[3];
-            var CatId = splitLine[4];
-            if(CatId==CategoryId) {
-                var outputcode = outputcode + "<tr onclick='showProduct("+ProductId+")'><td width='10%'><img src='' id='"+ProductId+"_img' width='95%'></td><td style='font-size:24px; vertical-align:middle;' valign='middle'>" + Description + "</td></tr>";
-            }
-
-        }
-      
-        var outputcode = outputcode + "</tbody></table></div>"
-
-        document.getElementById('productcategorylist').innerHTML=outputcode;
-
-        var categoryNameArr = getCookie("categoryList").split(",")
-        var categoryName = categoryNameArr[CategoryId]
-
-        document.getElementById('productcategorytitle').innerHTML=categoryName;
-
-        $("#productcategorylist").slideDown(1000);
-
-
-
-    }
-
-    function showProductCategory_Img(CategoryId) {
-
-
-
-       
-
-                                        
-                                    
-
-        var productList = getCookie("productList");
-        var productListSplit = productList.split("|");
-
-      
-        var i=0;
-        for(i=0;i<productListSplit.length;i++) {
-            var splitLine = productListSplit[i].split(",")
-            var ProductId = splitLine[0];
-            var Description = splitLine[1];
-            var Short = splitLine[2];
-            var SellPrice = splitLine[3];
-            var CatId = splitLine[4];
-            if(CatId==CategoryId) {
-                try{
-                showOfflineImage("img_primary_"+ProductId,ProductId+"_img");
-                    }catch(e){}
-            }
-
-        }
-
-       
-
-
-    }
-
-    function showImageOnProduct(ImageId) {
-        
-        var offlineImage= getCookie(ImageId);
-
-        document.getElementById("imgList").innerHTML = document.getElementById("imgList").innerHTML + "<img src='data:image/png;base64," + offlineImage + "' height='150' style='border:#999999 thin solid; padding:10px;'>&nbsp;&nbsp;"         
-
-    }
-
-
-    function showProduct(ProductId) {
-
-        var splitProducts = getCookie("productList").split("|")
-        for(i=0;i<splitProducts.length;i++) {
-            var productSplit = splitProducts[i].split(",")
-            if(productSplit[0]==ProductId) {
-                var ProductId = productSplit[0];
-                var Description = productSplit[1];
-                var Short = productSplit[2];
-                var SellPrice = productSplit[3];
-                var FullInfo = productSplit[5];
-            }
-        }
-
-        loadOffline("screen_productdisplay");
-
-        document.getElementById("productnametitle").innerHTML=Description
-        document.getElementById("productprice").innerHTML="$"+SellPrice
-        document.getElementById("productshort").innerHTML=Short
-        document.getElementById("productfullinfo").innerHTML=FullInfo
-
-        document.getElementById("imgList").innerHTML=""
-
-        showImageOnProduct("img_primary_"+ProductId)
-
-    }
-
-
-
-    function viewSyncedData() {
-
-
-
-        loadOffline("systemdiagnostics");
-
-        document.getElementById('productlistoutput').innerHTML=getCookie('productList')
-        document.getElementById('categorylistoutput').innerHTML=getCookie('categoryList')
-        document.getElementById('jobdataoutput').innerHTML=getCookie('jobData')
-
-        var productList = getCookie("productList");
-        var productListSplit = productList.split("|");
-
-        var i=0;
-        for(i=0;i<productListSplit.length;i++) {
-            var splitLine = productListSplit[i].split(",")
-            var ProductId = splitLine[0];
-            var Description = splitLine[1];
-            var Short = splitLine[2];
-            var SellPrice = splitLine[3];
-            var CatId = splitLine[4];
-
-            var cookiedata = getCookie("img_primary_"+ProductId)
-
-            
-            document.getElementById('productprimaryimages').innerHTML =  document.getElementById('productprimaryimages').innerHTML + "<img src='data:image/png;base64,"+cookiedata+"' width='100'>"
-
-        }
-
-    }
-
-    function showJobSheets() {
-
-        loadOffline("screen_jobsheetstart");
-
-        var jobData = getCookie("jobData");
-        var jobDataSplit = jobData.split("|")
-
-        document.getElementById("jobList").innerHTML = ""
-
-        for(i=0;i<jobDataSplit.length;i++) {
-            var jobSplit = jobDataSplit[i].split(",")
-
-            var FullName = jobSplit[5]
-            var Suburb = jobSplit[8]
-            
-            document.getElementById("jobList").innerHTML = document.getElementById("jobList").innerHTML + "<table class='table table-striped table-bordered table-hover' style='background-color:#EEEEEE;' width='100%'><tr><td width='50%' style='padding:10px;'>"+FullName+"</td><td width='35%' style='padding:10px;'>" + Suburb + "</td><td width='15%' style='padding:10px;'>Start</td></tr></table>"
-
-
-        }
-
-        //document.getElementById("jobList").innerHTML = document.getElementById("jobList").innerHTML + "</table>"
-
-
-    }
-
-
-
-
-    </script>
+<!--[if lt IE 9]>
+<script src="js/html5shiv.js"></script>
+<script src="js/respond.min.js"></script>
+<![endif]-->
 
 </head>
 
-<body onload="onAppLoad()">
-    <div id="normalloading" style="position:fixed; width:75px; right:0px; bottom:0px; display:none; z-index:10000;"><img src="loadingcat.gif" width="100%"></div>
+<body>
+	<nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+		<div class="container-fluid">
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#sidebar-collapse">
+					<span class="sr-only">Toggle navigation</span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+				<a class="navbar-brand" href="#">Geeks on Wheels</a>
+				<ul class="user-menu">
+					<li class="dropdown pull-right">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown"><svg class="glyph stroked male-user"><use xlink:href="#stroked-male-user"></use></svg> User <span class="caret"></span></a>
+						<ul class="dropdown-menu" role="menu">
+							<li><a href="#"><svg class="glyph stroked male-user"><use xlink:href="#stroked-male-user"></use></svg> Profile</a></li>
+							<li><a href="#" onclick="alert(getLocalVar('javelin_products'))"><svg class="glyph stroked gear"><use xlink:href="#stroked-gear"></use></svg> Show Product Data</a></li>
+							<li><a href="#" onclick="$('#loginModal').modal('show');"><svg class="glyph stroked cancel"><use xlink:href="#stroked-cancel"></use></svg> Logout</a></li>
+						</ul>
+					</li>
+				</ul>
+			</div>
+							
+		</div><!-- /.container-fluid -->
+	</nav>
+		
+	<div id="sidebar-collapse" class="col-sm-3 col-lg-2 sidebar" style="display:none;">
+		<form role="search">
+			<div class="form-group">
+				<input type="text" class="form-control" placeholder="Search">
+			</div>
+		</form>
+		<ul class="nav menu">
+			<li class="active"><a href="index.html"><svg class="glyph stroked dashboard-dial"><use xlink:href="#stroked-dashboard-dial"></use></svg> Dashboard</a></li>
+			<li><a href="widgets.html"><svg class="glyph stroked calendar"><use xlink:href="#stroked-calendar"></use></svg> Widgets</a></li>
+			<li><a href="charts.html"><svg class="glyph stroked line-graph"><use xlink:href="#stroked-line-graph"></use></svg> Charts</a></li>
+			<li><a href="tables.html"><svg class="glyph stroked table"><use xlink:href="#stroked-table"></use></svg> Tables</a></li>
+			<li><a href="forms.html"><svg class="glyph stroked pencil"><use xlink:href="#stroked-pencil"></use></svg> Forms</a></li>
+			<li><a href="panels.html"><svg class="glyph stroked app-window"><use xlink:href="#stroked-app-window"></use></svg> Alerts &amp; Panels</a></li>
+			<li><a href="icons.html"><svg class="glyph stroked star"><use xlink:href="#stroked-star"></use></svg> Icons</a></li>
+			<li class="parent ">
+				<a href="#">
+					<span data-toggle="collapse" href="#sub-item-1"><svg class="glyph stroked chevron-down"><use xlink:href="#stroked-chevron-down"></use></svg></span> Dropdown 
+				</a>
+				<ul class="children collapse" id="sub-item-1">
+					<li>
+						<a class="" href="#">
+							<svg class="glyph stroked chevron-right"><use xlink:href="#stroked-chevron-right"></use></svg> Sub Item 1
+						</a>
+					</li>
+					<li>
+						<a class="" href="#">
+							<svg class="glyph stroked chevron-right"><use xlink:href="#stroked-chevron-right"></use></svg> Sub Item 2
+						</a>
+					</li>
+					<li>
+						<a class="" href="#">
+							<svg class="glyph stroked chevron-right"><use xlink:href="#stroked-chevron-right"></use></svg> Sub Item 3
+						</a>
+					</li>
+				</ul>
+			</li>
+			<li role="presentation" class="divider"></li>
+			<li><a href="login.html"><svg class="glyph stroked male-user"><use xlink:href="#stroked-male-user"></use></svg> Login Page</a></li>
+		</ul>
+
+	</div><!--/.sidebar-->
+		
+	<div class="col-sm-12 col-sm-offset-0 col-lg-12 col-lg-offset-0 main">			
+		<div class="row">
+			<ol class="breadcrumb">
+				<li><a href="#"><svg class="glyph stroked home"><use xlink:href="#stroked-home"></use></svg></a></li>
+				<li class="active" id="breadcrumb_text">Welcome</li>
+			</ol>
+		</div><!--/.row-->
+
+		<div class="modal-content" style="width:500px; left:50%; margin-left:-250px; margin-top:100px; display:none;" id="screen_appload">
+            
+            <div class="modal-body">
+                Geeks on Wheels Javelin is loading...
+            </div>
+            
+        </div>
+
+        <div class="modal-content" style="width:500px; left:50%; margin-left:-250px; margin-top:100px; display:none;" id="screen_genericloading">
+            
+            <div class="modal-body" align="center">
+                Please Wait...
+            </div>
+            
+        </div>
 
 
-    <div class="modal fade" id="loginToJavelin" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <!--button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button-->
-                    <h4 class="modal-title" id="myModalLabel">Sign in to Javelin</h4>
-                </div>
-                <div class="modal-body" align="center">
-                    <div style="width:300px;" align="left">
-                    <form role="form">
-                            <fieldset>
-                                <div class="form-group">
-                                    Username or Email Address <input class="form-control" placeholder="Username" id="Username" name="username" type="email" autofocus>
-                                </div>
-                                <div class="form-group">
-                                    Password <input class="form-control" placeholder="Password" name="password" type="password" id="Password" value="">
-                                </div>
-                      
-                            </fieldset>
-                        </form>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default" onclick="$('#loginToJavelin').modal('hide');">Cancel</button>
-                    <!--button type="button" class="btn btn-default" data-dismiss="modal">Quit</button-->
-                    <button type="button" class="btn btn-primary" onclick="submitLogin()">Sign In</button>
-                </div>
+        <div class="modal-content" style="width:500px; left:50%; margin-left:-250px; margin-top:30px; display:none;" id="screen_dashboard">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel">Main Menu</h4>
+            </div>
+            <div class="modal-body" id="categoryListOptions" style="overflow:auto;">
+               Please reload from the server to show options here
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="startOnlineReload()">Online Reload</button>
             </div>
         </div>
-    </div>
-    <div class="modal fade" id="searchResults" tabindex="-1" role="dialog" aria-labelledby="searchreslabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <!--button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button-->
-                    <h4 class="modal-title" id="searchreslabel">Search Results</h4>
-                </div>
-                <div class="modal-body" align="left">
-                    
-                        <div id="searchResultsArea"></div>
-                  
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default" onclick="closeSearch()">Close Search</button>
-                    
-                </div>
+
+        <div class="modal-content" style="width:74%; left:50%; margin-left:-37%; margin-top:30px; display:none;" id="screen_productinfo">
+            <div class="modal-header">
+                <h4 class="modal-title" id="productName">Product Name</h4>
+            </div>
+            <div class="modal-body" id="productData" style="overflow:auto;">
+               The internet monkeys are still generating dynamic content which will go here
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="showScreen('dashboard')">Close</button>
             </div>
         </div>
-    </div>
-    <div class="modal fade" id="errorDisplay" tabindex="-1" role="dialog" aria-labelledby="myModalLabel2" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <!--button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button-->
-                    <h4 class="modal-title" id="myModalLabel2">An error has occured...</h4>
-                </div>
-                <div class="modal-body">
-                    <p><strong><span id="errDescription"></span></strong></p>
-                    <p><i>Solution:</i><br><span id="errSolution"></span></p>
 
-                </div>
-                <div class="modal-footer">
-                    
-                    <!--button type="button" class="btn btn-default" data-dismiss="modal">Quit</button-->
-                    <button type="button" class="btn btn-primary" onclick="$('#errorDisplay').modal('hide');" id="errDismiss">Dismiss</button>
-                </div>
+        <div class="modal-content" style="width:500px; left:50%; margin-left:-250px; margin-top:100px; display:none;" id="screen_signin">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel">Sign In</h4>
+            </div>
+            <div class="modal-body">
+                <input type="email" style="width:100%;" placeholder="Email Address" class="form-control" id="UserEmailAddress"><br>
+                <input type="password" style="width:100%;" placeholder="Password" class="form-control" id="UserPassword">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="startSignIn()">Sign In</button>
             </div>
         </div>
-    </div>
-    <div class="modal fade" id="notConnectedDisplay" tabindex="-1" role="dialog" aria-labelledby="myModalLabel4" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <!--button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button-->
-                    <h4 class="modal-title" id="myModalLabel4">Can't Connect to Javelin</h4>
+		
+		<div class="modal fade" id="loginModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                        <h4 class="modal-title" id="myModalLabel">Modal title</h4>
+                    </div>
+                    <div class="modal-body">
+                        Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary">Save changes</button>
+                    </div>
                 </div>
-                <div class="modal-body">
-                    <h2>Unfortunately, you need an internet connection to use Javelin. </h2>
-                    Please ensure your mobile data is switched on or you are connected to wifi and then Try Again. If you are sure that you are connected to the internet (try googling something for example) then please go to www.Javelin.co.nz/cantconnect and report the problem.
-
-                </div>
-                <div class="modal-footer">
-                    
-                    <!--button type="button" class="btn btn-default" data-dismiss="modal">Quit</button-->
-                    <button type="button" class="btn btn-primary" onclick="location.reload()">Try Again</button>
-                </div>
+                <!-- /.modal-content -->
             </div>
+            <!-- /.modal-dialog -->
         </div>
-    </div>
-    <div id="wrapper">
 
-        <!-- igation -->
-        <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0; position:fixed; width:100%;">
-            <div class="navbar-header" align="center">
-                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <!--a class="navbar-brand" href="#" onclick="loadScript('publichome')">Javelin</a--><span class="navbar-brand" id="topbartext">Geeks on Wheels TechApp</span>
-            </div>
-            <!-- /.navbar-header -->
+	<script src="js/jquery-1.11.1.min.js"></script>
+	<script src="js/bootstrap.min.js"></script>
+	<script src="js/chart.min.js"></script>
+	<script src="js/chart-data.js"></script>
+	<script src="js/easypiechart.js"></script>
+	<script src="js/easypiechart-data.js"></script>
+	<script src="js/bootstrap-datepicker.js"></script>
+	<script>
+		$('#calendar').datepicker({
+		});
 
-            <!--ul class="nav navbar-top-links navbar-right">
-                <li class="dropdown">
-                   
-                    <ul class="dropdown-menu dropdown-messages">
-                        <li>
-                            <a href="#">
-                                <div>
-                                    <strong>John Smith</strong>
-                                    <span class="pull-right text-muted">
-                                        <em>Yesterday</em>
-                                    </span>
-                                </div>
-                                <div>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque eleifend...</div>
-                            </a>
-                        </li>
-                        <li class="divider"></li>
-                        <li>
-                            <a href="#">
-                                <div>
-                                    <strong>John Smith</strong>
-                                    <span class="pull-right text-muted">
-                                        <em>Yesterday</em>
-                                    </span>
-                                </div>
-                                <div>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque eleifend...</div>
-                            </a>
-                        </li>
-                        <li class="divider"></li>
-                        <li>
-                            <a href="#">
-                                <div>
-                                    <strong>John Smith</strong>
-                                    <span class="pull-right text-muted">
-                                        <em>Yesterday</em>
-                                    </span>
-                                </div>
-                                <div>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque eleifend...</div>
-                            </a>
-                        </li>
-                        <li class="divider"></li>
-                        <li>
-                            <a class="text-center" href="#">
-                                <strong>Read All Messages</strong>
-                                <i class="fa fa-angle-right"></i>
-                            </a>
-                        </li>
-                    </ul>
-                    <!-- /.dropdown-messages
-                </li>
-                <!-- /.dropdown -->
-                
-                <!-- /.dropdown -->
-                
-                <!-- /.dropdown 
-            </ul>
-            <!-- /.navbar-top-links -->
+		!function ($) {
+		    $(document).on("click","ul.nav li.parent > a > span.icon", function(){          
+		        $(this).find('em:first').toggleClass("glyphicon-minus");      
+		    }); 
+		    $(".sidebar span.icon").find('em:first').addClass("glyphicon-plus");
+		}(window.jQuery);
 
-            <div class="navbar-default sidebar" role="navigation">
-                <div class="sidebar-nav navbar-collapse collapse" aria-expanded="false">
-                <ul class="nav">
-                    <li onclick="runSync()">
-                            <a href="#"><i class="fa fa-rotate-left fa-fw"></i> <span id="syncstatus">Sync Online</span></a>
-                           
-                        </li>
-                    
-                </div>
-
-                <ul class="nav" style="display:none;" id="side-menu">
-
-                </ul>
-                <!-- /.sidebar-collapse -->
-            </div>
-            <!-- /.navbar-static-side -->
-        </nav>
-
-        <div id="page-wrapper" style="padding-top:40px;">
-
-           <div class="offlinescreen" style="display:none;" id="screen_dashboard">
-
-            <br><br>
-
-                Welcome to Javlin for Geeks on Wheels! You are currently working in sync mode, where data is downloaded and stored on the device and information is shown from the devices storage. Please click Sync to update the app and stored data.
-
-                <br><br>
-
-                Click a product category in the left to start viewing!
-
-           </div>
-
-           <div class="offlinescreen" style="display:none;" id="screen_productcategory">
-
-                <div class="row">
-                    <div class="col-lg-12">
-                        <h1 class="page-header" id="productcategorytitle">Product Category</h1>
-                    </div>
-                    <!-- /.col-lg-12 -->
-                </div>
-                <div class="row">
-                    <div class="col-lg-12" id="productcategorylist">
-
-                    </div>
-                    <!-- /.col-lg-12 -->
-                </div>
-
-           </div>
-
-           <div class="offlinescreen" style="display:none;" id="screen_productdisplay">
-
-                <div class="row">
-                    <div class="col-lg-12">
-                        <h1 class="page-header" id="productnametitle">Please Choose a Product from the Category</h1>
-                        <span id="productprice" style="font-size:24px;font-weight:bold;"></span>
-                    </div>
-                    <!-- /.col-lg-12 -->
-                </div><br>
-                <div class="row">
-                    <div class="col-lg-12">
-                        <div style="overflow:auto; border:#999999 medium solid; padding:20px;" id="imgList"> </div>
-                    </div>
-                    <!-- /.col-lg-12 -->
-                </div><br><br>
-                <div class="row">
-                    <div class="col-lg-12" id="productshort" style="font-size:18px;">
-
-                    </div>
-                    <!-- /.col-lg-12 -->
-                </div><br><br>
-                <div class="row">
-                    <div class="col-lg-12" id="productfullinfo">
-
-                    </div>
-                    <!-- /.col-lg-12 -->
-                </div>
-
-           </div>
-
-           <div class="offlinescreen" style="display:none;" id="loginscreen">
-
-                <div class="row">
-                    <div class="col-lg-12">
-                        <h1 class="page-header" id="productnametitle">Please Sign-In to Javelin</h1>
-                    </div>
-                    <!-- /.col-lg-12 -->
-                </div><br>
-                <div class="row">
-                    <div class="col-lg-12">
-                        <button type="button" onclick="showLoginScreen()" class="btn btn-primary btn-lg btn-block">Sign In</button>
-                    </div>
-                    <!-- /.col-lg-12 -->
-                </div>
-
-           </div>
-
-           <div class="offlinescreen" style="display:none;" id="screen_jobsheetstart">
-
-                <div class="row">
-                    <div class="col-lg-12">
-                        <h1 class="page-header" id="productnametitle">Job Sheets</h1>
-                    </div>
-                    <!-- /.col-lg-12 -->
-                </div><br>
-                <div class="row">
-                    <div class="col-lg-12">
-                       <div id="jobList"></div>
-                    </div>
-                    <!-- /.col-lg-12 -->
-                </div>
-
-           </div>
-
-            <div class="offlinescreen" style="display:none;" id="systemdiagnostics">
-
-                <div class="row">
-                    <div class="col-lg-12">
-                        <h1 class="page-header">System Diagnostics</h1>
-                    </div>
-                    <!-- /.col-lg-12 -->
-                </div>
-                <div class="row">
-                    <div class="col-lg-12">
-                        <h4>Product List:</h4>
-                        <pre id="productlistoutput">
-
-                        </pre>
-                    </div>
-                    <!-- /.col-lg-12 -->
-                </div>
-                <div class="row">
-                    <div class="col-lg-12">
-                        <h4>Category List:</h4>
-                        <pre id="categorylistoutput">
-
-                        </pre>
-                    </div>
-                    <!-- /.col-lg-12 -->
-                </div>
-                <div class="row">
-                    <div class="col-lg-12">
-                        <h4>Product Primary Images</h4>
-                        <pre id="productprimaryimages">
-
-                        </pre>
-                    </div>
-                    <!-- /.col-lg-12 -->
-                </div>
-                <div class="row">
-                    <div class="col-lg-12">
-                        <h4>Job Data:</h4>
-                        <pre id="jobdataoutput">
-
-                        </pre>
-                    </div>
-                    <!-- /.col-lg-12 -->
-                </div>
-                <div class="row">
-                    <div class="col-lg-12">
-                        <h4>Action: Clear Data and Re-Sync</h4>
-                        <pre id="categorylistoutput"><a href="#" onclick="runSync();viewSyncedData()";>Re-Sync Data</a></pre>
-                    </div>
-                    <!-- /.col-lg-12 -->
-                </div>
-
-           </div>
-
-
-        </div>
-        <!-- /#page-wrapper -->
-
-    </div>
-    <!-- /#wrapper -->
-
-    <!-- jQuery -->
-    <!--script src="bower_components/jquery/dist/jquery.min.js"></script-->
-    <script src="jquerymobile.js"></script>
-    <script src="jquerystandard.js"></script>
-    <link rel="stylesheet" href="jquerymobile.css" />
-
-    <!-- Bootstrap Core JavaScript -->
-    <script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
-
-    <!-- Metis Menu Plugin JavaScript -->
-    <script src="bower_components/metisMenu/dist/metisMenu.min.js"></script>
-
-    <!-- Custom Theme JavaScript -->
-    <script src="dist/js/sb-admin-2.js"></script>
-<div id="CLICKA_currentSessionId" style="display:none;">Def</div>
-<div id="CLICKA_currentMode" style="display:none;">Offline</div>
+		$(window).on('resize', function () {
+		  if ($(window).width() > 768) $('#sidebar-collapse').collapse('show')
+		})
+		$(window).on('resize', function () {
+		  if ($(window).width() <= 767) $('#sidebar-collapse').collapse('hide')
+		})
+	</script>	
 </body>
 
 </html>
