@@ -17,6 +17,8 @@
         Jordan Smith
     </author>
 
+    <plugin name="cordova-plugin-whitelist" />
+
     <gap:platform name="ios" />
     <gap:platform name="android" />
     <gap:platform name="winphone" />
