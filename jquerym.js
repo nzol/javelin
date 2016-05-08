@@ -1423,7 +1423,7 @@ $.mobile.widget = $.Widget;
 			html: "",
 
 			// the text to be displayed when the popup is shown
-			text: "loading"
+			text: ""
 		},
 
 		defaultHtml: "<div class='" + loaderClass + "'>" +

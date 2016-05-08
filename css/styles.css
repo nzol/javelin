@@ -7,7 +7,7 @@ Version 1.0
 /*Global Styles*/
 
 body {
-	background: #f1f4f7;
+	background: #E6E6E6;
 	padding-top: 50px;
 	color: #5f6468;
 }
@@ -132,7 +132,7 @@ fieldset[disabled] .btn-default:active,
 .btn-default.disabled.active,
 .btn-default[disabled].active,
 fieldset[disabled] .btn-default.active {
-	background-color: #e9ecf2;
+	background-color: #FF0D00;
 	border-color: #e9ecf2;
 	color: #1b3548;
 }
@@ -158,8 +158,8 @@ fieldset[disabled] .btn-primary:active,
 .btn-primary.disabled.active,
 .btn-primary[disabled].active,
 fieldset[disabled] .btn-primary.active {
-	background-color: #30a5ff;
-	border-color: #30a5ff;
+	background-color: #FF0D00;
+	border-color: #FF0D00;
 }
 
 .btn-success,
@@ -628,7 +628,7 @@ a.bg-danger:hover {
 .breadcrumb {
 	border-radius: 0;
 	padding: 10px 15px;
-	background: #e9ecf2;
+	background: #E6E6EE;
 	box-shadow: 0 1px 1px rgba(0, 0, 0, .05);
 	margin: 0 ;
 }

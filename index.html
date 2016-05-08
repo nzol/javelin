@@ -3,18 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Geeks on Wheels</title>
+<title>JAVELIN</title>
 
-<link href="css/bootstrap.min.css" rel="stylesheet">
+<link href="css/bootstrap.css" rel="stylesheet">
 <link href="css/datepicker3.css" rel="stylesheet">
 <link href="css/styles.css" rel="stylesheet">
 
 <!--Icons-->
+<script src="js/lumino.glyphs.js"></script>
+<script src="jquery.js"></script>
+<script src="jquerym.js"></script>
+<script src="cordova.js"></script>
 
+<script type="text/javascript">
+$( function() {
+     document.addEventListener("deviceready", onAppLoad, false);
+});
+</script>
 
 </head>
 
-<body onload="onAppLoad()">
+<body>
 	<nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
 		<div class="container-fluid">
 			<div class="navbar-header">
@@ -24,14 +33,16 @@
 					<span class="icon-bar"></span>
 					<span class="icon-bar"></span>
 				</button>
-				<a class="navbar-brand" href="#" onclick="onAppLoad()">Geeks on Wheels</a>
+				<a class="navbar-brand" href="#" onclick="onAppLoad()">JAVELIN</a>
 				<ul class="user-menu">
 					<li class="dropdown pull-right">
-						<a href="#" class="dropdown-toggle" data-toggle="dropdown"><svg class="glyph stroked male-user"><use xlink:href="#stroked-male-user"></use></svg> User <span class="caret"></span></a>
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown"><svg class="glyph stroked gear"><use xlink:href="#stroked-gear"></use></svg> <span class="caret"></span></a>
 						<ul class="dropdown-menu" role="menu">
-							<li><a href="#"><svg class="glyph stroked male-user"><use xlink:href="#stroked-male-user"></use></svg> Profile</a></li>
+							<li><a href="#"><svg class="glyph stroked male-user"><use xlink:href="#stroked-male-user"></use></svg> My Account</a></li>
+							<li><a href="#" onclick="onAppLoad()"><svg class="glyph stroked gear"><use xlink:href="#stroked-gear"></use></svg> Manual Sequence</a></li>
+							<li><a href="#" onclick="alert(getLocalVar('javelin_products'))"><svg class="glyph stroked gear"><use xlink:href="#stroked-gear"></use></svg> Change Domain</a></li>
 							<li><a href="#" onclick="alert(getLocalVar('javelin_products'))"><svg class="glyph stroked gear"><use xlink:href="#stroked-gear"></use></svg> Show Product Data</a></li>
-							<li><a href="#" onclick="$('#loginModal').modal('show');"><svg class="glyph stroked cancel"><use xlink:href="#stroked-cancel"></use></svg> Logout</a></li>
+							<li><a href="#" onclick="showScreen('logout');"><svg class="glyph stroked cancel"><use xlink:href="#stroked-cancel"></use></svg> Logout</a></li>
 						</ul>
 					</li>
 				</ul>
@@ -82,7 +93,7 @@
 
 	</div><!--/.sidebar-->
 		
-	<div class="col-sm-12 col-sm-offset-0 col-lg-12 col-lg-offset-0 main">			
+	<!--<div class="col-sm-12 col-sm-offset-0 col-lg-12 col-lg-offset-0 main">			
 		<div class="row">
 			<ol class="breadcrumb">
 				<li><a href="#"><svg class="glyph stroked home"><use xlink:href="#stroked-home"></use></svg></a></li>
@@ -107,11 +118,11 @@
         </div>
 
 
-        <div class="modal-content" style="width:500px; left:50%; margin-left:-250px; margin-top:30px; display:none;" id="screen_dashboard">
-            <div class="modal-header">
+        <div class="modal-content" style="width:500px; left:2%; margin-top:30px; display:none; position:fixed;" id="screen_dashboard">
+            <div class="modal-header" style="overflow:auto;">
                 <h4 class="modal-title" id="myModalLabel">Main Menu</h4>
             </div>
-            <div class="modal-body" id="categoryListOptions" style="overflow:auto;">
+            <div class="modal-body" id="categoryListOptions" style="overflow:auto; max-height:400px;">
                Please reload from the server to show options here
             </div>
             <div class="modal-footer">
@@ -119,7 +130,7 @@
             </div>
         </div>
 
-        <div class="modal-content" style="width:74%; left:50%; margin-left:-37%; margin-top:30px; display:none;" id="screen_productinfo">
+        <div class="modal-content" style="width:96%; margin:2%; margin-top:-35px; display:none; position:fixed; height:96%; z-index:10000;" id="screen_productinfo">
             <div class="modal-header">
                 <h4 class="modal-title" id="productName">Product Name</h4>
             </div>
@@ -128,6 +139,19 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" onclick="showScreen('dashboard')">Close</button>
+            </div>
+        </div>
+
+        <div class="modal-content" style="width:96%; margin:2%; margin-top:-35px; display:none; position:fixed; height:96%; z-index:10000;" id="screen_logout">
+            <div class="modal-header">
+                <h4 class="modal-title" id="">Logout</h4>
+            </div>
+            <div class="modal-body" id="productData" style="overflow:auto;">
+               Are you sure you want to sign out? Any offline data will be deleted and you have to go back online before you are able to sign in again.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" onclick="showScreen('dashboard')">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="logout()">Logout</button>
             </div>
         </div>
 
@@ -164,6 +188,13 @@
             <!-- /.modal-dialog -->
         </div>
 
+      
+
+
+        <div style="position:fixed; bottom:2%; right:2%; width:30%; max-width:500px;">
+        	<img src="gow.png" width="100%" height="100%"><br>Alpha Development Mode
+        </div>
+
 	<script src="js/jquery-1.11.1.min.js"></script>
 	<script src="js/bootstrap.min.js"></script>
 	<script src="js/chart.min.js"></script>
@@ -191,9 +222,7 @@
 	</script>	
 </body>
 
-<script src="js/lumino.glyphs.js"></script>
-<script src="jquery.js"></script>
-<script src="jquerym.js"></script>
+
 <script src="phonegap.js"></script>
 
 <script type="text/javascript">
@@ -208,7 +237,14 @@ function onAppLoad() {
 
 document.getElementById("screen_appload").style.display="";
 
-// 1. Check login status
+// 0.5. Check online status::
+
+if(navigator.onLine) {
+
+
+
+
+// 1. Check login and status
 
 $.ajax({
    type: 'GET',
@@ -220,25 +256,50 @@ $.ajax({
     success: function(json) {
         if(json.jsonReturns[0].returnData=="registered") {
             // We are running online and the user is not a guest. Now show the last viewed offline screen. Will go to the dashboard by default for now
-            alert("REGISTERED")
             showScreen("dashboard")
+            startOnlineReload();
 
         }
         else {
 		    // We are running online and the user is a guest. Must be connected to server to sign in
-		    alert("GUEST")
 			$("#screen_appload").fadeOut(500)
 			document.getElementById("screen_signin").style.display="";		    
     
 }
     },
     error: function(e) {
-            alert("ERROR "+e.message)
+            alert("YOU ARE OFFLINE "+e.message)
             // We are running offline and will show the last viewed offline screen if available.
     
     }
 });
 
+}
+
+else {
+
+	// do offline startup procedure
+
+
+	alert("OFFLINE");
+
+	if(getLocalVar("javelin_signinstatus")=="registered") {
+
+		// procede - logged in
+            showScreen("dashboard")
+            loadOfflineValues()
+
+	}
+	else {
+
+		// halt - offline and not logged in
+
+		document.getElementById("screen_appload").innerHTML="Unfortunately, you can not use this app offline if haven't yet signed in. Please go online, sign in and you will then be able to access offline data."
+
+
+	}
+
+}
 
    
 }
@@ -383,7 +444,7 @@ function loadOfflineValues() {
 function displayCategory(catId) {
 
 	var ProductData = getLocalVar("javelin_products");
-	var ProdDataSplit = ProductData.split(";")
+	var ProdDataSplit = ProductData.split("~")
 
 	var outputData = "<button type=\"button\" class=\"btn btn-primary btn-lg btn-block\" onclick=\"loadOfflineValues()\">Back to Categories</button>";
 
@@ -413,7 +474,7 @@ function displayProduct(givenproductId) {
 	showScreen("productinfo");
 
 	var ProductData = getLocalVar("javelin_products");
-	var ProdDataSplit = ProductData.split(";")
+	var ProdDataSplit = ProductData.split("~")
 
 	var outputData = "";
 
@@ -424,6 +485,7 @@ function displayProduct(givenproductId) {
 		var ProductId = spliti[0];
 		var DisplayName = spliti[1];
 		var DisplayInfo = spliti[2];
+		var PriceDisplay = spliti[3];
 		var CategoryId = spliti[4];
 
 		if(ProductId==givenproductId) {
@@ -431,7 +493,13 @@ function displayProduct(givenproductId) {
 			//var outputData = outputData + "<button type=\"button\" class=\"btn btn-primary btn-lg btn-block\" onclick=\"displayProduct("+ProductId+")\">"+DisplayName+"</button>";
 
 			document.getElementById("productName").innerHTML = DisplayName
-			document.getElementById("productData").innerHTML = DisplayInfo
+
+			if(PriceDisplay=="") {
+				document.getElementById("productData").innerHTML = DisplayInfo
+			}
+			else {
+				document.getElementById("productData").innerHTML = "<h4>Price: " + PriceDisplay + "</h4><hr>" + DisplayInfo
+			}
 
 		}
 
@@ -464,6 +532,7 @@ function startSignIn() {
 	        if(json.jsonReturns[0].returnData=="success") {
 	            // Sign on was successful
 	            alert("SIGN ON SUCCESS")
+	            setLocalVar("javelin_signinstatus","registered")
 	            // go to dashboard 
 	            $("#screen_genericloading").fadeOut(500);
 	            document.getElementById("screen_dashboard").style.display=""
@@ -471,6 +540,8 @@ function startSignIn() {
 	        else {
 			    // Sign on failed
 			    alert("Sign on failed. Please try again")
+	            setLocalVar("javelin_signinstatus","unregistered")
+
 			    alert(json.jsonReturns[0].returnData)
 				$("#screen_genericloading").fadeOut(500)
 				document.getElementById("screen_signin").style.display="";		    
@@ -484,6 +555,57 @@ function startSignIn() {
 	    }
 	});
 
+
+
+}
+
+function logout() {
+
+if(navigator.onLine) {
+
+	// do logout procedure
+
+	$.ajax({
+	   type: 'GET',
+	    url: serverLocation + "endpoint.php?Action=signOut",
+	    async: false,
+	    jsonpCallback: 'jsonCallback',
+	    contentType: "application/json",
+	    dataType: 'jsonp',
+	    success: function(json) {
+	        if(json.jsonReturns[0].returnData=="success") {
+	            // Sign out was successful
+	            alert("You are now signed out")
+	            setLocalVar("javelin_signinstatus","unregistered")
+	            // go to dashboard 
+	            $("#screen_genericloading").fadeOut(500);
+				showScreen("signin")	    
+	        }
+	        else {
+			    // Sign out failed
+			    alert("There was an error signing you out. Please try again")
+	            setLocalVar("javelin_signinstatus","registered")
+
+				$("#screen_genericloading").fadeOut(500)
+				showScreen("dashboard")	    
+	}
+	    },
+	    error: function(e) {
+	            alert("ERROR "+e.message)
+	            // There is a program error
+	    
+	    }
+	});
+
+}
+
+else {
+
+	alert("Sorry, you can't change authentication status when you are not connected to the internet. Please go back online and then sign out");
+
+	showScreen("dashboard")
+
+}
 
 
 }
