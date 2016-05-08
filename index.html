@@ -104,7 +104,9 @@ $( function() {
 		<div class="modal-content" style="width:500px; left:50%; margin-left:-250px; margin-top:100px; display:none;" id="screen_appload">
             
             <div class="modal-body">
-                Geeks on Wheels Javelin is loading...
+                <center>Please Wait...
+                <br><br>
+                <button onclick="goOffline()" value="Go Offline">Go Offline</button></center>
             </div>
             
         </div>
@@ -278,6 +280,14 @@ $.ajax({
 
 else {
 
+	goOffline();
+
+}
+
+   
+}
+
+function goOffline() {
 	// do offline startup procedure
 
 
@@ -298,10 +308,6 @@ else {
 
 
 	}
-
-}
-
-   
 }
 
 function showScreen(screenname) {
